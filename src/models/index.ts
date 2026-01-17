@@ -43,3 +43,9 @@ export type { INotification } from './notification.model';
 
 export { default as Preference } from './preference.model';
 export type { IPreference } from './preference.model';
+
+export { default as Upload } from './upload.model';
+export type { IUpload } from './upload.model';
+
+export { default as Category } from './category.model';
+export type { ICategory } from './category.model';

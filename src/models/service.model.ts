@@ -31,6 +31,8 @@ export interface IService extends Document {
   branch?: Types.ObjectId;                 // If service is branch-specific
   isActive: boolean;
   icon?: string;                           // Icon URL for frontend display
+  imageUrl?: string;                       // Service display image (Cloudinary)
+  imagePublicId?: string;                  // Cloudinary public ID for deletion
   sortOrder: number;                       // For display ordering
 }
 
@@ -96,6 +98,8 @@ const serviceSchema = new Schema<IService>({
     default: true
   },
   icon: String,
+  imageUrl: String,
+  imagePublicId: String,
   sortOrder: {
     type: Number,
     default: 0

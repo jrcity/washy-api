@@ -111,6 +111,10 @@ export interface IOrder extends Document {
   // For Graphics Design orders (future)
   attachments?: string[];                  // Cloudinary URLs for design briefs
   
+  // Pickup/Delivery screenshots
+  pickupScreenshots?: string[];            // Cloudinary URLs for pickup proof
+  deliveryScreenshots?: string[];          // Cloudinary URLs for delivery proof
+  
   // Cancellation
   cancelledAt?: Date;
   cancellationReason?: string;
@@ -291,6 +295,8 @@ const orderSchema = new Schema<IOrder>({
   },
   feedback: String,
   attachments: [String],
+  pickupScreenshots: [String],
+  deliveryScreenshots: [String],
   cancelledAt: Date,
   cancellationReason: String
 }, {

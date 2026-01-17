@@ -11,6 +11,8 @@ import branchRoutes from './branch.routes';
 import serviceRoutes from './service.routes';
 import paymentRoutes from './payment.routes';
 import notificationRoutes from './notification.routes';
+import uploadRoutes from './upload.routes';
+import categoryRoutes from './category.routes';
 
 const router = Router();
 
@@ -30,5 +32,7 @@ router.use('/branches', branchRoutes);
 router.use('/services', serviceRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/uploads', uploadRoutes);
+router.use('/categories', categoryRoutes);
 
 export default router;

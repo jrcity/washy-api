@@ -24,3 +24,9 @@ export {
   validateParams,
   validateRequest
 } from './validation.middleware';
+
+export {
+  uploadSingle,
+  uploadMultiple,
+  uploadFields
+} from './upload.middleware';

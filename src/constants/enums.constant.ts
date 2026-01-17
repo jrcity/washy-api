@@ -124,3 +124,13 @@ export enum EDELIVERY_PROOF_TYPE {
     OTP_CODE = "otp_code",
     SIGNATURE = "signature"
 }
+
+// Upload categories for file classification
+export enum EUPLOAD_CATEGORY {
+    SERVICE_IMAGE = "service_image",
+    CATEGORY_IMAGE = "category_image",
+    PICKUP_SCREENSHOT = "pickup_screenshot",
+    DELIVERY_SCREENSHOT = "delivery_screenshot",
+    PROOF_PHOTO = "proof_photo",
+    OTHER = "other"
+}

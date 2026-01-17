@@ -67,6 +67,8 @@ Authorization: Bearer <your_jwt_token>
       { name: 'Orders', description: 'Order management' },
       { name: 'Branches', description: 'Branch management' },
       { name: 'Services', description: 'Service & pricing management' },
+      { name: 'Categories', description: 'Service category management' },
+      { name: 'Uploads', description: 'File upload management' },
       { name: 'Payments', description: 'Payment processing' },
       { name: 'Notifications', description: 'User notifications' }
     ],
@@ -269,7 +271,9 @@ Authorization: Bearer <your_jwt_token>
               }
             },
             isExpressAvailable: { type: 'boolean', example: true },
-            isActive: { type: 'boolean', example: true }
+            isActive: { type: 'boolean', example: true },
+            imageUrl: { type: 'string', example: 'https://res.cloudinary.com/washy/image/upload/v1234/washy/services/wash-fold.jpg' },
+            imagePublicId: { type: 'string', example: 'washy/services/wash-fold' }
           }
         },
         CreateServiceInput: {
@@ -442,6 +446,76 @@ Authorization: Bearer <your_jwt_token>
             },
             isRead: { type: 'boolean', example: false },
             createdAt: { type: 'string', format: 'date-time' }
+          }
+        },
+
+        // Upload schemas
+        Upload: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            url: { type: 'string', example: 'https://res.cloudinary.com/washy/image/upload/v1234/washy/services/image.jpg' },
+            publicId: { type: 'string', example: 'washy/services/image' },
+            category: {
+              type: 'string',
+              enum: ['service_image', 'category_image', 'pickup_screenshot', 'delivery_screenshot', 'proof_photo', 'other'],
+              example: 'service_image'
+            },
+            originalName: { type: 'string', example: 'my-image.jpg' },
+            format: { type: 'string', example: 'jpg' },
+            size: { type: 'integer', example: 102400 },
+            width: { type: 'integer', example: 800 },
+            height: { type: 'integer', example: 600 },
+            uploadedBy: { type: 'string' },
+            relatedModel: { type: 'string', enum: ['Service', 'Category', 'Order'] },
+            relatedId: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        UploadInput: {
+          type: 'object',
+          required: ['file', 'category'],
+          properties: {
+            file: { type: 'string', format: 'binary', description: 'Image file (jpg, png, gif, webp)' },
+            category: {
+              type: 'string',
+              enum: ['service_image', 'category_image', 'pickup_screenshot', 'delivery_screenshot', 'proof_photo', 'other']
+            },
+            relatedModel: { type: 'string', enum: ['Service', 'Category', 'Order'] },
+            relatedId: { type: 'string' }
+          }
+        },
+
+        // Category schemas
+        Category: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            name: { type: 'string', example: 'Laundry' },
+            slug: { type: 'string', example: 'laundry' },
+            description: { type: 'string', example: 'All laundry services' },
+            imageUrl: { type: 'string', example: 'https://res.cloudinary.com/washy/image/upload/v1234/washy/categories/laundry.jpg' },
+            isActive: { type: 'boolean', example: true },
+            sortOrder: { type: 'integer', example: 1 },
+            createdAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        CreateCategoryInput: {
+          type: 'object',
+          required: ['name', 'description'],
+          properties: {
+            name: { type: 'string', example: 'Dry Cleaning', minLength: 2 },
+            description: { type: 'string', example: 'Premium dry cleaning services', minLength: 10 },
+            sortOrder: { type: 'integer', example: 2 }
+          }
+        },
+        UpdateCategoryInput: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', example: 'Dry Cleaning' },
+            description: { type: 'string', example: 'Premium dry cleaning services' },
+            isActive: { type: 'boolean', example: true },
+            sortOrder: { type: 'integer', example: 2 }
           }
         }
       },
@@ -1617,6 +1691,377 @@ Authorization: Bearer <your_jwt_token>
           security: [{ bearerAuth: [] }],
           responses: {
             200: { description: 'All notifications marked as read' }
+          }
+        }
+      },
+
+      // ==================== UPLOAD ROUTES ====================
+      '/uploads': {
+        post: {
+          tags: ['Uploads'],
+          summary: 'Upload a file',
+          description: 'Upload a single file to Cloudinary. Requires authentication.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: { $ref: '#/components/schemas/UploadInput' }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: 'File uploaded successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'File uploaded successfully' },
+                      data: { $ref: '#/components/schemas/Upload' }
+                    }
+                  }
+                }
+              }
+            },
+            400: { $ref: '#/components/responses/ValidationError' },
+            401: { $ref: '#/components/responses/UnauthorizedError' }
+          }
+        },
+        get: {
+          tags: ['Uploads'],
+          summary: 'Get all uploads (Admin)',
+          description: 'Get all uploads with filters. Requires admin/manager role.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+            { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
+            { name: 'category', in: 'query', schema: { type: 'string', enum: ['service_image', 'category_image', 'pickup_screenshot', 'delivery_screenshot', 'proof_photo', 'other'] } },
+            { name: 'relatedModel', in: 'query', schema: { type: 'string', enum: ['Service', 'Category', 'Order'] } },
+            { name: 'relatedId', in: 'query', schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'List of uploads',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          uploads: { type: 'array', items: { $ref: '#/components/schemas/Upload' } },
+                          pagination: { $ref: '#/components/schemas/Pagination' }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            401: { $ref: '#/components/responses/UnauthorizedError' },
+            403: { $ref: '#/components/responses/ForbiddenError' }
+          }
+        }
+      },
+      '/uploads/multiple': {
+        post: {
+          tags: ['Uploads'],
+          summary: 'Upload multiple files',
+          description: 'Upload multiple files to Cloudinary (max 10 files). Requires authentication.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    files: {
+                      type: 'array',
+                      items: { type: 'string', format: 'binary' },
+                      maxItems: 10
+                    },
+                    category: {
+                      type: 'string',
+                      enum: ['service_image', 'category_image', 'pickup_screenshot', 'delivery_screenshot', 'proof_photo', 'other']
+                    },
+                    relatedModel: { type: 'string', enum: ['Service', 'Category', 'Order'] },
+                    relatedId: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: 'Files uploaded successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: '5 files uploaded successfully' },
+                      data: { type: 'array', items: { $ref: '#/components/schemas/Upload' } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/uploads/{id}': {
+        get: {
+          tags: ['Uploads'],
+          summary: 'Get upload by ID',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Upload details',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { $ref: '#/components/schemas/Upload' }
+                    }
+                  }
+                }
+              }
+            },
+            404: { $ref: '#/components/responses/NotFoundError' }
+          }
+        },
+        delete: {
+          tags: ['Uploads'],
+          summary: 'Delete an upload',
+          description: 'Delete an upload from Cloudinary',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: { description: 'Upload deleted successfully' },
+            404: { $ref: '#/components/responses/NotFoundError' }
+          }
+        }
+      },
+
+      // ==================== CATEGORY ROUTES ====================
+      '/categories': {
+        get: {
+          tags: ['Categories'],
+          summary: 'Get all categories',
+          description: 'Get all service categories',
+          parameters: [
+            { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
+            { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
+            { name: 'isActive', in: 'query', schema: { type: 'boolean' } }
+          ],
+          responses: {
+            200: {
+              description: 'List of categories',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: {
+                        type: 'object',
+                        properties: {
+                          categories: { type: 'array', items: { $ref: '#/components/schemas/Category' } },
+                          pagination: { $ref: '#/components/schemas/Pagination' }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        post: {
+          tags: ['Categories'],
+          summary: 'Create a category (Admin)',
+          description: 'Create a new service category. Requires MANAGE_SERVICES permission.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/CreateCategoryInput' }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: 'Category created successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Category created successfully' },
+                      data: { $ref: '#/components/schemas/Category' }
+                    }
+                  }
+                }
+              }
+            },
+            400: { $ref: '#/components/responses/ValidationError' },
+            403: { $ref: '#/components/responses/ForbiddenError' }
+          }
+        }
+      },
+      '/categories/active': {
+        get: {
+          tags: ['Categories'],
+          summary: 'Get active categories',
+          description: 'Get all active service categories (public)',
+          responses: {
+            200: {
+              description: 'Active categories',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { type: 'array', items: { $ref: '#/components/schemas/Category' } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/categories/{id}': {
+        get: {
+          tags: ['Categories'],
+          summary: 'Get category by ID',
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Category details',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { $ref: '#/components/schemas/Category' }
+                    }
+                  }
+                }
+              }
+            },
+            404: { $ref: '#/components/responses/NotFoundError' }
+          }
+        },
+        patch: {
+          tags: ['Categories'],
+          summary: 'Update category (Admin)',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/UpdateCategoryInput' }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Category updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      message: { type: 'string', example: 'Category updated successfully' },
+                      data: { $ref: '#/components/schemas/Category' }
+                    }
+                  }
+                }
+              }
+            },
+            403: { $ref: '#/components/responses/ForbiddenError' },
+            404: { $ref: '#/components/responses/NotFoundError' }
+          }
+        },
+        delete: {
+          tags: ['Categories'],
+          summary: 'Delete category (Admin)',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: { description: 'Category deleted successfully' },
+            403: { $ref: '#/components/responses/ForbiddenError' },
+            404: { $ref: '#/components/responses/NotFoundError' }
+          }
+        }
+      },
+      '/categories/{id}/image': {
+        patch: {
+          tags: ['Categories'],
+          summary: 'Upload category image (Admin)',
+          description: 'Upload or update the category image',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'multipart/form-data': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    image: { type: 'string', format: 'binary' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Category image uploaded',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      message: { type: 'string', example: 'Category image uploaded successfully' },
+                      data: { $ref: '#/components/schemas/Category' }
+                    }
+                  }
+                }
+              }
+            },
+            403: { $ref: '#/components/responses/ForbiddenError' },
+            404: { $ref: '#/components/responses/NotFoundError' }
           }
         }
       }
