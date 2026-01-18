@@ -15,7 +15,7 @@ export const CONFIGS = {
     NAME: process.env.APP_NAME || 'Washy API',
     PORT: Number(process.env.APP_PORT) || 3000,
     ENV: process.env.NODE_ENV || 'development',
-    URL: process.env.APP_URL || 'http://localhost:5174',
+    URL: process.env.APP_URL || 'http://localhost:5173',
   },
   MONGODB: {
     URL: process.env.MONGODB_URL || '',
@@ -28,6 +28,7 @@ export const CONFIGS = {
   CORS: [
     "http://localhost:4173",
     "http://localhost:5174",
+    "http://localhost:5173",
     "https://washy.vercel.app",
     "https://washy.netlify.app",
   ],
