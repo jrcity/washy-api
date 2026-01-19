@@ -29,7 +29,7 @@ export const CONFIGS = {
     "http://localhost:4173",
     "http://localhost:5174",
     "http://localhost:5173",
-    "washy-xi.vercel.app"
+    "https://washy-xi.vercel.app"
   ],
   CLOUDINARY: {
     CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
