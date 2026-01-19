@@ -8,7 +8,7 @@ import Payment, { IPayment } from '@/models/payment.model';
 import Order from '@/models/order.model';
 import { AppError } from '@/utils/error.util';
 import { CONFIGS } from '@/constants/configs.constant';
-import { EPAYMENT_STATUS, EPAYMENT_METHOD } from '@/constants/enums.constant';
+import { EPAYMENT_STATUS, EPAYMENT_METHOD, EORDER_STATUS } from '@/constants/enums.constant';
 
 interface PaystackResponse {
   status: boolean;
@@ -69,7 +69,12 @@ class PaymentService {
       payment.amountPaid = (data.data.amount || 0) / 100;
       payment.paidAt = new Date();
       await payment.save();
-      await Order.findByIdAndUpdate(payment.order, { isPaid: true, payment: payment._id });
+      await payment.save();
+      await Order.findByIdAndUpdate(payment.order, { 
+        isPaid: true, 
+        payment: payment._id,
+        status: EORDER_STATUS.CONFIRMED 
+      });
     }
     return payment;
   }
@@ -83,7 +88,11 @@ class PaymentService {
       amountPaid: amount, method: EPAYMENT_METHOD.CASH,
       status: EPAYMENT_STATUS.COMPLETED, paidAt: new Date()
     });
-    await Order.findByIdAndUpdate(orderId, { isPaid: true, payment: payment._id });
+    await Order.findByIdAndUpdate(orderId, { 
+      isPaid: true, 
+      payment: payment._id,
+      status: EORDER_STATUS.CONFIRMED 
+    });
     return payment;
   }
 

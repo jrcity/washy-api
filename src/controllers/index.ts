@@ -8,6 +8,8 @@ export * as AuthController from './auth.controller';
 export * as OrderController from './order.controller';
 export * as BranchController from './branch.controller';
 export * as ServiceController from './service.controller';
+export * as UserController from './user.controller';
+
 export * as PaymentController from './payment.controller';
 export * as NotificationController from './notification.controller';
 export { default as UploadController } from './upload.controller';
