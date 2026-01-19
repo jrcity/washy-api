@@ -312,7 +312,7 @@ orderSchema.index({ pickupDate: 1 });
 orderSchema.index({ createdAt: -1 });
 
 // Pre-save hook to generate order number
-orderSchema.pre('save', async function() {
+orderSchema.pre('validate', async function() {
   if (this.isNew && !this.orderNumber) {
     const date = new Date();
     const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
