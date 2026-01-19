@@ -39,7 +39,11 @@ export const validateQuery = (schema: ZodSchema) => {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const parsed = await schema.parseAsync(req.query);
-      req.query = parsed as any;
+      // Update req.query in place to avoid getter-only error
+      for (const key in req.query) {
+        delete (req.query as any)[key];
+      }
+      Object.assign(req.query, parsed);
       next();
     } catch (error) {
       if (error instanceof ZodError) {
@@ -62,7 +66,11 @@ export const validateParams = (schema: ZodSchema) => {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const parsed = await schema.parseAsync(req.params);
-      req.params = parsed as any;
+      // Update req.params in place
+      for (const key in req.params) {
+        delete (req.params as any)[key];
+      }
+      Object.assign(req.params, parsed);
       next();
     } catch (error) {
       if (error instanceof ZodError) {
@@ -93,11 +101,17 @@ export const validateRequest = (schema: {
       }
       if (schema.query) {
         const parsed = await schema.query.parseAsync(req.query);
-        req.query = parsed as any;
+        for (const key in req.query) {
+          delete (req.query as any)[key];
+        }
+        Object.assign(req.query, parsed);
       }
       if (schema.params) {
         const parsed = await schema.params.parseAsync(req.params);
-        req.params = parsed as any;
+        for (const key in req.params) {
+          delete (req.params as any)[key];
+        }
+        Object.assign(req.params, parsed);
       }
       next();
     } catch (error) {
