@@ -14,13 +14,18 @@ import notificationRoutes from './notification.routes';
 import uploadRoutes from './upload.routes';
 import categoryRoutes from './category.routes';
 import UserRoutes from './user.routes';
+import fileManagerRoutes from './file-manager.routes';
+import analyticsRoutes from './analytics.routes';
+import taskRoutes from './task.routes';
+import rbacRoutes from './rbac.routes';
+import chatRoutes from './chat.routes';
 
 const router = Router();
 
 // Health check
 router.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     service: 'Washy API v1'
   });
@@ -36,5 +41,11 @@ router.use('/notifications', notificationRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/users', UserRoutes);
+router.use('/file-manager', fileManagerRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/tasks', taskRoutes);
+router.use('/rbac', rbacRoutes);
+router.use('/chat', chatRoutes);
 
 export default router;
+

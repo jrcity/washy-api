@@ -20,7 +20,7 @@ export class AppError extends Error {
     errors?: any[]
   ) {
     super(message);
-    
+
     this.statusCode = statusCode;
     this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
     this.isOperational = true;
@@ -51,6 +51,10 @@ export class AppError extends Error {
 
   static internal(message: string = 'Internal server error'): AppError {
     return new AppError(message, HTTP_STATUS.INTERNAL_SERVER_ERROR);
+  }
+
+  static tooManyRequests(message: string = 'Too many requests'): AppError {
+    return new AppError(message, 429);
   }
 }
 

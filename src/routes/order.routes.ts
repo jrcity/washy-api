@@ -8,7 +8,7 @@ import { Router } from 'express';
 import { OrderController } from '@/controllers';
 import { validateBody, validateQuery } from '@/middlewares/validation.middleware';
 import { authenticate, authorize, requirePermission } from '@/middlewares/auth.middleware';
-import { 
+import {
   createOrderValidation, updateOrderStatusValidation, assignRiderValidation,
   deliveryProofValidation, orderRatingValidation, cancelOrderValidation, orderQueryValidation
 } from '@/validations/order.validation';
@@ -25,20 +25,20 @@ router.post('/:id/rate', validateBody(orderRatingValidation), OrderController.ra
 router.post('/:id/cancel', validateBody(cancelOrderValidation), OrderController.cancelOrder);
 
 // Staff/Admin routes
-router.get('/', authorize(EUSERS_ROLE.ADMIN, EUSERS_ROLE.SUPER_ADMIN, EUSERS_ROLE.BRANCH_MANAGER, EUSERS_ROLE.STAFF), 
+router.get('/', authorize(EUSERS_ROLE.ADMIN, EUSERS_ROLE.SUPER_ADMIN, EUSERS_ROLE.BRANCH_MANAGER, EUSERS_ROLE.STAFF, EUSERS_ROLE.RIDER),
   validateQuery(orderQueryValidation), OrderController.getOrders);
-router.patch('/:id/status', requirePermission(EPERMISSIONS.UPDATE_ORDER_STATUS), 
+router.patch('/:id/status', requirePermission(EPERMISSIONS.UPDATE_ORDER_STATUS),
   validateBody(updateOrderStatusValidation), OrderController.updateOrderStatus);
-router.post('/:id/assign-rider', requirePermission(EPERMISSIONS.MANAGE_PICKUP_DELIVERY), 
+router.post('/:id/assign-rider', requirePermission(EPERMISSIONS.MANAGE_PICKUP_DELIVERY),
   validateBody(assignRiderValidation), OrderController.assignRider);
 router.post('/:id/generate-otp', requirePermission(EPERMISSIONS.MANAGE_PICKUP_DELIVERY), OrderController.generateDeliveryOtp);
 
 // Rider routes
-router.post('/:id/verify-delivery', authorize(EUSERS_ROLE.RIDER), 
+router.post('/:id/verify-delivery', authorize(EUSERS_ROLE.RIDER),
   validateBody(deliveryProofValidation), OrderController.verifyDelivery);
 
 // Admin stats
-router.get('/stats/overview', authorize(EUSERS_ROLE.ADMIN, EUSERS_ROLE.SUPER_ADMIN, EUSERS_ROLE.BRANCH_MANAGER), 
+router.get('/stats/overview', authorize(EUSERS_ROLE.ADMIN, EUSERS_ROLE.SUPER_ADMIN, EUSERS_ROLE.BRANCH_MANAGER),
   OrderController.getOrderStats);
 
 export default router;

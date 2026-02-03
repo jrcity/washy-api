@@ -28,7 +28,7 @@ class CategoryController {
    * GET /api/categories/:id
    */
   getCategory = asyncHandler(async (req: Request, res: Response) => {
-    const category = await categoryService.getCategoryById(req.params.id);
+    const category = await categoryService.getCategoryById(req.params.id as string);
     return ResponseHandler.success(res, category);
   });
 
@@ -37,7 +37,7 @@ class CategoryController {
    * GET /api/categories/slug/:slug
    */
   getCategoryBySlug = asyncHandler(async (req: Request, res: Response) => {
-    const category = await categoryService.getCategoryBySlug(req.params.slug);
+    const category = await categoryService.getCategoryBySlug(req.params.slug as string);
     return ResponseHandler.success(res, category);
   });
 
@@ -71,7 +71,7 @@ class CategoryController {
    * PATCH /api/categories/:id
    */
   updateCategory = asyncHandler(async (req: Request, res: Response) => {
-    const category = await categoryService.updateCategory(req.params.id, req.body);
+    const category = await categoryService.updateCategory(req.params.id as string, req.body);
     return ResponseHandler.success(res, category, 'Category updated successfully');
   });
 
@@ -85,7 +85,7 @@ class CategoryController {
     }
 
     const userId = req.user!._id.toString();
-    const categoryId = req.params.id;
+    const categoryId = req.params.id as string;
 
     // Upload to Cloudinary
     const result = await uploadToCloudinary(
@@ -108,7 +108,7 @@ class CategoryController {
       category: EUPLOAD_CATEGORY.CATEGORY_IMAGE,
       userId,
       relatedModel: 'Category',
-      relatedId: categoryId
+      relatedId: categoryId as string
     });
 
     return ResponseHandler.success(res, category, 'Category image uploaded successfully');
@@ -119,7 +119,7 @@ class CategoryController {
    * DELETE /api/categories/:id
    */
   deleteCategory = asyncHandler(async (req: Request, res: Response) => {
-    await categoryService.deleteCategory(req.params.id);
+    await categoryService.deleteCategory(req.params.id as string);
     return ResponseHandler.success(res, null, 'Category deleted successfully');
   });
 }

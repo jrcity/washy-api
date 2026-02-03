@@ -23,14 +23,20 @@ import Order from './models/order.model';
 import Payment from './models/payment.model';
 import Notification from './models/notification.model';
 import Preference from './models/preference.model';
+import Category from './models/category.model';
+import Upload from './models/upload.model';
+import TaskRecord from './models/task.model';
+import { ChatConversation, ChatMessage } from './models/chat.model';
+import AuditLog from './models/audit-log.model';
+import RBACPolicy from './models/rbac-policy.model';
 
 // Import enums
-import { 
-  EUSERS_ROLE, 
-  EPERMISSIONS, 
-  ESERVICE_TYPE, 
+import {
+  EUSERS_ROLE,
+  EPERMISSIONS,
+  ESERVICE_TYPE,
   ESERVICE_CATEGORY,
-  EGARMENT_TYPE 
+  EGARMENT_TYPE
 } from './constants/enums.constant';
 import { CONFIGS } from './constants/configs.constant';
 
@@ -293,24 +299,31 @@ async function connectDB() {
   const mongoUri = CONFIGS.MONGODB.URL;
   console.log('🔌 Connecting to MongoDB...');
   console.log(`   URI: ${mongoUri.replace(/\/\/.*:.*@/, '//<credentials>@')}`);
-  
+
   await mongoose.connect(mongoUri);
   console.log('✅ MongoDB Connected');
 }
 
 async function clearCollections() {
   console.log('\n🧹 Clearing all collections...');
-  
+
   const collections: { model: mongoose.Model<any>; name: string }[] = [
     { model: Order, name: 'Orders' },
     { model: Payment, name: 'Payments' },
     { model: Notification, name: 'Notifications' },
     { model: Preference, name: 'Preferences' },
     { model: Service, name: 'Services' },
+    { model: Category, name: 'Categories' },
     { model: Branch, name: 'Branches' },
-    { model: User, name: 'Users (all types)' }
+    { model: User, name: 'Users (all types)' },
+    { model: Upload, name: 'Uploads' },
+    { model: TaskRecord, name: 'Tasks' },
+    { model: ChatConversation, name: 'Conversations' },
+    { model: ChatMessage, name: 'Messages' },
+    { model: AuditLog, name: 'Audit Logs' },
+    { model: RBACPolicy, name: 'Policies' }
   ];
-  
+
   for (const { model, name } of collections) {
     const count = await model.countDocuments();
     await model.deleteMany({});
@@ -320,36 +333,36 @@ async function clearCollections() {
 
 async function seedBranches() {
   console.log('\n🏢 Seeding Branches...');
-  
+
   const branches = [];
   for (const branchData of branchesData) {
     const branch = await Branch.create(branchData);
     branches.push(branch);
     console.log(`   ✓ Created branch: ${branch.name} (${branch.code})`);
   }
-  
+
   return branches;
 }
 
 async function seedServices() {
   console.log('\n🧺 Seeding Services...');
-  
+
   const services = [];
   for (const serviceData of servicesData) {
     const service = await Service.create(serviceData);
     services.push(service);
     console.log(`   ✓ Created service: ${service.name} (${service.pricing.length} price items)`);
   }
-  
+
   return services;
 }
 
 async function seedUsers(branches: any[]) {
   console.log('\n👥 Seeding Users...');
-  
+
   const salt = await bcrypt.genSalt(10);
   const users: Record<string, any> = {};
-  
+
   // Super Admin
   const superAdminHash = await bcrypt.hash(usersData.superAdmin.password, salt);
   users.superAdmin = await Admin.create({
@@ -362,7 +375,7 @@ async function seedUsers(branches: any[]) {
     permissions: Object.values(EPERMISSIONS)
   });
   console.log(`   ✓ Created Super Admin: ${users.superAdmin.name}`);
-  
+
   // Admin
   const adminHash = await bcrypt.hash(usersData.admin.password, salt);
   users.admin = await Admin.create({
@@ -372,12 +385,12 @@ async function seedUsers(branches: any[]) {
     passwordHash: adminHash,
     role: EUSERS_ROLE.ADMIN,
     isSuperAdmin: false,
-    permissions: Object.values(EPERMISSIONS).filter(p => 
+    permissions: Object.values(EPERMISSIONS).filter(p =>
       p !== EPERMISSIONS.DELETE_BRANCHES && p !== EPERMISSIONS.MANAGE_ADMINS
     )
   });
   console.log(`   ✓ Created Admin: ${users.admin.name}`);
-  
+
   // Branch Manager (assigned to first branch)
   const managerHash = await bcrypt.hash(usersData.branchManager.password, salt);
   users.branchManager = await BranchManager.create({
@@ -405,7 +418,7 @@ async function seedUsers(branches: any[]) {
   // Update branch with manager
   await Branch.findByIdAndUpdate(branches[0]._id, { manager: users.branchManager._id });
   console.log(`   ✓ Created Branch Manager: ${users.branchManager.name} → ${branches[0].name}`);
-  
+
   // Staff (assigned to first branch)
   const staffHash = await bcrypt.hash(usersData.staff.password, salt);
   users.staff = await Staff.create({
@@ -425,7 +438,7 @@ async function seedUsers(branches: any[]) {
   // Add staff to branch
   await Branch.findByIdAndUpdate(branches[0]._id, { $push: { staff: users.staff._id } });
   console.log(`   ✓ Created Staff: ${users.staff.name} → ${branches[0].name}`);
-  
+
   // Rider (assigned to first branch, covers its zones)
   const riderHash = await bcrypt.hash(usersData.rider.password, salt);
   users.rider = await Rider.create({
@@ -449,7 +462,7 @@ async function seedUsers(branches: any[]) {
   // Add rider to branch
   await Branch.findByIdAndUpdate(branches[0]._id, { $push: { riders: users.rider._id } });
   console.log(`   ✓ Created Rider: ${users.rider.name} → ${branches[0].name}`);
-  
+
   // Customer
   const customerHash = await bcrypt.hash(usersData.customer.password, salt);
   users.customer = await Customer.create({
@@ -467,7 +480,7 @@ async function seedUsers(branches: any[]) {
     }
   });
   console.log(`   ✓ Created Customer: ${users.customer.name}`);
-  
+
   return users;
 }
 
@@ -475,13 +488,13 @@ async function printSummary(branches: any[], services: any[], users: Record<stri
   console.log('\n' + '═'.repeat(60));
   console.log('📊 SEED SUMMARY');
   console.log('═'.repeat(60));
-  
+
   console.log(`\n🏢 Branches: ${branches.length}`);
   branches.forEach(b => console.log(`   • ${b.name} (${b.code}) - ${b.coverageZones.length} zones`));
-  
+
   console.log(`\n🧺 Services: ${services.length}`);
   services.forEach(s => console.log(`   • ${s.name} - ₦${s.pricing[0].basePrice} starting`));
-  
+
   console.log('\n👥 Users:');
   console.log(`   • Super Admin: ${users.superAdmin.email} / ${usersData.superAdmin.password}`);
   console.log(`   • Admin: ${users.admin.email} / ${usersData.admin.password}`);
@@ -489,7 +502,7 @@ async function printSummary(branches: any[], services: any[], users: Record<stri
   console.log(`   • Staff: ${users.staff.email} / ${usersData.staff.password}`);
   console.log(`   • Rider: ${users.rider.email} / ${usersData.rider.password}`);
   console.log(`   • Customer: ${users.customer.email} / ${usersData.customer.password}`);
-  
+
   console.log('\n' + '═'.repeat(60));
   console.log('✅ Database seeded successfully!');
   console.log('═'.repeat(60) + '\n');
@@ -505,16 +518,16 @@ async function seed() {
     console.log('═'.repeat(60));
     console.log('This script will CLEAR all existing data and seed fresh data.');
     console.log('═'.repeat(60));
-    
+
     await connectDB();
     await clearCollections();
-    
+
     const branches = await seedBranches();
     const services = await seedServices();
     const users = await seedUsers(branches);
-    
+
     await printSummary(branches, services, users);
-    
+
     process.exit(0);
   } catch (error) {
     console.error('\n❌ Seeding failed:', error);

@@ -18,24 +18,24 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
     limit: Number(req.query.limit) || 10,
     sort: req.query.sort as string
   };
-  
+
   const result = await UserService.getUsers(filters);
-  return ResponseHandler.paginated(res, result.users, 
+  return ResponseHandler.paginated(res, result.users,
     result.pagination.page, result.pagination.limit, result.pagination.total);
 });
 
 export const getUser = asyncHandler(async (req: Request, res: Response) => {
-  const user = await UserService.getUserById(req.params.id);
+  const user = await UserService.getUserById(req.params.id as string);
   return ResponseHandler.success(res, user);
 });
 
 export const updateUser = asyncHandler(async (req: Request, res: Response) => {
-  const user = await UserService.updateUser(req.params.id, req.body);
+  const user = await UserService.updateUser(req.params.id as string, req.body);
   return ResponseHandler.success(res, user, 'User updated successfully');
 });
 
 export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
-  await UserService.deleteUser(req.params.id);
+  await UserService.deleteUser(req.params.id as string);
   return ResponseHandler.success(res, null, 'User deleted successfully');
 });
 

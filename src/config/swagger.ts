@@ -88,8 +88,8 @@ Authorization: Bearer <your_jwt_token>
           properties: {
             success: { type: 'boolean', example: false },
             message: { type: 'string', example: 'Error message' },
-            errors: { 
-              type: 'array', 
+            errors: {
+              type: 'array',
               items: { type: 'object' },
               description: 'Validation errors (if any)'
             }
@@ -160,8 +160,8 @@ Authorization: Bearer <your_jwt_token>
             name: { type: 'string', example: 'John Doe' },
             email: { type: 'string', example: 'john@example.com' },
             phone: { type: 'string', example: '+2348012345678' },
-            role: { 
-              type: 'string', 
+            role: {
+              type: 'string',
               enum: ['customer', 'rider', 'staff', 'branch_manager', 'admin', 'super_admin'],
               example: 'customer'
             },
@@ -233,8 +233,8 @@ Authorization: Bearer <your_jwt_token>
         ServicePricing: {
           type: 'object',
           properties: {
-            garmentType: { 
-              type: 'string', 
+            garmentType: {
+              type: 'string',
               enum: ['shirt', 'trouser', 'suit', 'dress', 'duvet', 'curtain', 'bedsheet', 'towel', 'skirt', 'underwear', 'blanket', 'jacket', 'native_attire', 'other'],
               example: 'shirt'
             },
@@ -249,18 +249,18 @@ Authorization: Bearer <your_jwt_token>
             name: { type: 'string', example: 'Wash & Fold' },
             slug: { type: 'string', example: 'wash-and-fold' },
             description: { type: 'string', example: 'Professional washing and folding service' },
-            category: { 
-              type: 'string', 
+            category: {
+              type: 'string',
               enum: ['laundry', 'graphics_design', 'dry_cleaning', 'alteration', 'shoe_care', 'household'],
               example: 'laundry'
             },
-            serviceType: { 
+            serviceType: {
               type: 'string',
               enum: ['wash_and_fold', 'wash_and_iron', 'dry_clean', 'express', 'starch', 'iron_only'],
               example: 'wash_and_fold'
             },
-            pricing: { 
-              type: 'array', 
+            pricing: {
+              type: 'array',
               items: { $ref: '#/components/schemas/ServicePricing' }
             },
             estimatedDuration: {
@@ -337,7 +337,7 @@ Authorization: Bearer <your_jwt_token>
             discount: { type: 'number', example: 0 },
             deliveryFee: { type: 'number', example: 500 },
             total: { type: 'number', example: 3000 },
-            status: { 
+            status: {
               type: 'string',
               enum: ['pending', 'confirmed', 'picked_up', 'in_process', 'ready', 'out_for_delivery', 'delivered', 'completed', 'cancelled'],
               example: 'pending'
@@ -377,7 +377,7 @@ Authorization: Bearer <your_jwt_token>
           type: 'object',
           required: ['status'],
           properties: {
-            status: { 
+            status: {
               type: 'string',
               enum: ['pending', 'confirmed', 'picked_up', 'in_process', 'ready', 'out_for_delivery', 'delivered', 'completed', 'cancelled'],
               example: 'confirmed'
@@ -403,12 +403,12 @@ Authorization: Bearer <your_jwt_token>
             customer: { type: 'string' },
             amount: { type: 'number', example: 3000 },
             currency: { type: 'string', example: 'NGN' },
-            method: { 
+            method: {
               type: 'string',
               enum: ['card', 'bank_transfer', 'ussd', 'cash'],
               example: 'card'
             },
-            status: { 
+            status: {
               type: 'string',
               enum: ['pending', 'processing', 'completed', 'failed', 'refunded'],
               example: 'pending'
@@ -422,7 +422,7 @@ Authorization: Bearer <your_jwt_token>
           required: ['orderId'],
           properties: {
             orderId: { type: 'string', example: '507f1f77bcf86cd799439011' },
-            method: { 
+            method: {
               type: 'string',
               enum: ['card', 'bank_transfer', 'ussd'],
               example: 'card'
@@ -439,13 +439,109 @@ Authorization: Bearer <your_jwt_token>
             recipient: { type: 'string' },
             title: { type: 'string', example: 'Order Confirmed' },
             message: { type: 'string', example: 'Your order CF-20260103-0001 has been confirmed' },
-            type: { 
+            type: {
               type: 'string',
               enum: ['order_status', 'payment', 'promotion', 'system'],
               example: 'order_status'
             },
             isRead: { type: 'boolean', example: false },
             createdAt: { type: 'string', format: 'date-time' }
+          }
+        },
+
+
+        // Chat schemas
+        Conversation: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            participants: { type: 'array', items: { $ref: '#/components/schemas/User' } },
+            lastMessage: { type: 'object', properties: { content: { type: 'string' }, sentAt: { type: 'string', format: 'date-time' } } },
+            unreadCount: { type: 'integer' },
+            status: { type: 'string', enum: ['active', 'closed', 'archived'] },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        Message: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            conversationId: { type: 'string' },
+            sender: { $ref: '#/components/schemas/User' },
+            content: { type: 'string' },
+            attachments: { type: 'array', items: { type: 'string' } },
+            readBy: { type: 'array', items: { type: 'string' } },
+            createdAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        SendMessageInput: {
+          type: 'object',
+          required: ['content'],
+          properties: {
+            content: { type: 'string', minLength: 1 },
+            attachments: { type: 'array', items: { type: 'string' } }
+          }
+        },
+
+        // RBAC schemas
+        Policy: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            resources: { type: 'array', items: { type: 'string' } },
+            actions: { type: 'array', items: { type: 'string' } },
+            roles: { type: 'array', items: { type: 'string' } },
+            effect: { type: 'string', enum: ['allow', 'deny'] },
+            conditions: { type: 'object' },
+            isActive: { type: 'boolean' }
+          }
+        },
+        CreatePolicyInput: {
+          type: 'object',
+          required: ['name', 'resources', 'actions', 'roles', 'effect'],
+          properties: {
+            name: { type: 'string' },
+            description: { type: 'string' },
+            resources: { type: 'array', items: { type: 'string' } },
+            actions: { type: 'array', items: { type: 'string' } },
+            roles: { type: 'array', items: { type: 'string' } },
+            effect: { type: 'string', enum: ['allow', 'deny'] },
+            conditions: { type: 'object' }
+          }
+        },
+
+        // Task schemas
+        Task: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            title: { type: 'string' },
+            description: { type: 'string' },
+            type: { type: 'string', enum: ['pickup', 'delivery', 'other'] },
+            status: { type: 'string', enum: ['pending', 'assigned', 'in_progress', 'completed', 'failed', 'cancelled'] },
+            priority: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+            assignee: { $ref: '#/components/schemas/User' },
+            relatedOrder: { type: 'string' },
+            branch: { type: 'string' },
+            dueDate: { type: 'string', format: 'date-time' },
+            completedAt: { type: 'string', format: 'date-time' },
+            createdAt: { type: 'string', format: 'date-time' }
+          }
+        },
+        CreateTaskInput: {
+          type: 'object',
+          required: ['title', 'type', 'priority', 'branch'],
+          properties: {
+            title: { type: 'string' },
+            description: { type: 'string' },
+            type: { type: 'string', enum: ['pickup', 'delivery', 'other'] },
+            priority: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+            branch: { type: 'string' },
+            relatedOrder: { type: 'string' },
+            dueDate: { type: 'string', format: 'date-time' }
           }
         },
 
@@ -2022,6 +2118,8 @@ Authorization: Bearer <your_jwt_token>
           }
         }
       },
+
+
       '/categories/{id}/image': {
         patch: {
           tags: ['Categories'],
@@ -2064,6 +2162,423 @@ Authorization: Bearer <your_jwt_token>
             404: { $ref: '#/components/responses/NotFoundError' }
           }
         }
+      },
+
+      // ==================== CHAT ROUTES ====================
+      '/chat/conversations': {
+        get: {
+          tags: ['Chat'],
+          summary: 'Get conversations',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'List of conversations',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { type: 'array', items: { $ref: '#/components/schemas/Conversation' } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/chat/conversations/{id}': {
+        get: {
+          tags: ['Chat'],
+          summary: 'Get conversation details',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Conversation details',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { $ref: '#/components/schemas/Conversation' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        patch: { // Close/Reopen
+          tags: ['Chat'],
+          summary: 'Update conversation status',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+            { name: 'action', in: 'query', schema: { type: 'string', enum: ['close', 'reopen'] } }
+          ],
+          responses: {
+            200: { description: 'Conversation updated' }
+          }
+        }
+      },
+      '/chat/conversations/{id}/messages': {
+        get: {
+          tags: ['Chat'],
+          summary: 'Get messages',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+            { name: 'page', in: 'query', schema: { type: 'integer' } }
+          ],
+          responses: {
+            200: {
+              description: 'List of messages',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { type: 'array', items: { $ref: '#/components/schemas/Message' } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        post: {
+          tags: ['Chat'],
+          summary: 'Send message',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/SendMessageInput' }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: 'Message sent',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { $ref: '#/components/schemas/Message' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/chat/support/start': {
+        post: {
+          tags: ['Chat'],
+          summary: 'Start support chat',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['reason'],
+                  properties: {
+                    reason: { type: 'string' },
+                    orderId: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: 'Support chat started',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { $ref: '#/components/schemas/Conversation' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      // ==================== RBAC ROUTES ====================
+      '/rbac': {
+        get: {
+          tags: ['RBAC'],
+          summary: 'List policies',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'List of policies',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { type: 'array', items: { $ref: '#/components/schemas/Policy' } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        post: {
+          tags: ['RBAC'],
+          summary: 'Create policy',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/CreatePolicyInput' }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: 'Policy created',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { $ref: '#/components/schemas/Policy' }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/rbac/{id}': {
+        get: {
+          tags: ['RBAC'],
+          summary: 'Get policy',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            200: {
+              description: 'Policy details',
+              content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, data: { $ref: '#/components/schemas/Policy' } } } } }
+            }
+          }
+        },
+        patch: {
+          tags: ['RBAC'],
+          summary: 'Update policy',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          requestBody: {
+            required: true,
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/CreatePolicyInput' } } }
+          },
+          responses: { 200: { description: 'Policy updated' } }
+        },
+        delete: {
+          tags: ['RBAC'],
+          summary: 'Delete policy',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: { 200: { description: 'Policy deleted' } }
+        }
+      },
+      '/rbac/check-access': {
+        post: {
+          tags: ['RBAC'],
+          summary: 'Check access',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['resource', 'action'],
+                  properties: {
+                    resource: { type: 'string' },
+                    action: { type: 'string' },
+                    role: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Access check result',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      message: { type: 'string' },
+                      data: { type: 'object', properties: { granted: { type: 'boolean' } } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      // ==================== TASK ROUTES ====================
+      '/tasks': {
+        get: {
+          tags: ['Tasks'],
+          summary: 'List tasks',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'page', in: 'query', schema: { type: 'integer' } },
+            { name: 'limit', in: 'query', schema: { type: 'integer' } },
+            { name: 'status', in: 'query', schema: { type: 'string' } },
+            { name: 'type', in: 'query', schema: { type: 'string' } },
+            { name: 'assignee', in: 'query', schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'List of tasks',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { type: 'object', properties: { tasks: { type: 'array', items: { $ref: '#/components/schemas/Task' } }, pagination: { $ref: '#/components/schemas/Pagination' } } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        post: {
+          tags: ['Tasks'],
+          summary: 'Create task',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateTaskInput' } } }
+          },
+          responses: {
+            201: {
+              description: 'Task created',
+              content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, data: { $ref: '#/components/schemas/Task' } } } } }
+            }
+          }
+        }
+      },
+      '/tasks/my-tasks': {
+        get: {
+          tags: ['Tasks'],
+          summary: 'Get my tasks (Rider)',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: 'My tasks',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      data: { type: 'array', items: { $ref: '#/components/schemas/Task' } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/tasks/{id}': {
+        get: {
+          tags: ['Tasks'],
+          summary: 'Get task',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            200: { description: 'Task details', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean' }, data: { $ref: '#/components/schemas/Task' } } } } } }
+          }
+        }
+      },
+      '/tasks/{id}/start': {
+        patch: {
+          tags: ['Tasks'],
+          summary: 'Start task',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: { 200: { description: 'Task started' } }
+        }
+      },
+      '/tasks/{id}/complete': {
+        patch: {
+          tags: ['Tasks'],
+          summary: 'Complete task',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: { 200: { description: 'Task completed' } }
+        }
+      },
+      '/tasks/{id}/assign': {
+        patch: {
+          tags: ['Tasks'],
+          summary: 'Assign task',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['assigneeId'], properties: { assigneeId: { type: 'string' } } } } } },
+          responses: { 200: { description: 'Task assigned' } }
+        }
+      },
+
+      // ==================== ANALYTICS ROUTES ====================
+      '/analytics/dashboard': {
+        get: {
+          tags: ['Analytics'],
+          summary: 'Get dashboard stats',
+          security: [{ bearerAuth: [] }],
+          responses: { 200: { description: 'Dashboard stats' } }
+        }
+      },
+      '/analytics/revenue/overview': {
+        get: { tags: ['Analytics'], summary: 'Revenue overview', security: [{ bearerAuth: [] }], responses: { 200: { description: 'Revenue stats' } } }
+      },
+      '/analytics/orders/volume': {
+        get: { tags: ['Analytics'], summary: 'Order volume', security: [{ bearerAuth: [] }], responses: { 200: { description: 'Order stats' } } }
+      },
+      '/analytics/customers/acquisition': {
+        get: { tags: ['Analytics'], summary: 'Customer acquisition', security: [{ bearerAuth: [] }], responses: { 200: { description: 'Customer stats' } } }
+      },
+      '/analytics/riders/performance': {
+        get: { tags: ['Analytics'], summary: 'Rider performance', security: [{ bearerAuth: [] }], responses: { 200: { description: 'Rider stats' } } }
       }
     }
   },

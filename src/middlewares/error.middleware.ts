@@ -28,7 +28,7 @@ const handleZodError = (error: ZodError): AppError => {
     field: err.path.join('.'),
     message: err.message
   }));
-  
+
   return AppError.badRequest('Validation failed', errors);
 };
 
@@ -56,7 +56,7 @@ const handleValidationError = (error: mongoose.Error.ValidationError): AppError 
     field: err.path,
     message: err.message
   }));
-  
+
   return AppError.badRequest('Validation failed', errors);
 };
 
@@ -81,7 +81,7 @@ const sendErrorDev = (error: AppError, res: Response): void => {
     errors: error.errors,
     stack: error.stack
   };
-  
+
   res.status(error.statusCode).json(response);
 };
 
@@ -95,11 +95,11 @@ const sendErrorProd = (error: AppError, res: Response): void => {
       message: error.message,
       errors: error.errors
     };
-    
+
     res.status(error.statusCode).json(response);
   } else {
     console.error('ERROR 💥', error);
-    
+
     res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Something went wrong'
@@ -118,9 +118,9 @@ export const errorHandler = (
 ): void => {
   error.statusCode = error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR;
   error.status = error.status || 'error';
-  
+
   let processedError = error;
-  
+
   if (error instanceof ZodError) {
     processedError = handleZodError(error);
   } else if (error.name === 'CastError') {
@@ -139,7 +139,7 @@ export const errorHandler = (
       error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR
     );
   }
-  
+
   if (CONFIGS.APP.ENV === 'development') {
     sendErrorDev(processedError, res);
   } else {

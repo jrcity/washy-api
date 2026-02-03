@@ -65,7 +65,7 @@ class UploadController {
    * GET /api/uploads/:id
    */
   getUpload = asyncHandler(async (req: Request, res: Response) => {
-    const upload = await uploadService.getUploadById(req.params.id);
+    const upload = await uploadService.getUploadById(req.params.id as string);
     return ResponseHandler.success(res, upload);
   });
 
@@ -93,7 +93,7 @@ class UploadController {
    */
   deleteUpload = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!._id.toString();
-    await uploadService.deleteUpload(req.params.id, userId);
+    await uploadService.deleteUpload(req.params.id as string, userId);
     return ResponseHandler.success(res, null, 'Upload deleted successfully');
   });
 
@@ -103,9 +103,9 @@ class UploadController {
    */
   updateRelation = asyncHandler(async (req: Request, res: Response) => {
     const { relatedModel, relatedId } = req.body;
-    
+
     const upload = await uploadService.updateUploadRelation(
-      req.params.id,
+      req.params.id as string,
       relatedModel,
       relatedId
     );

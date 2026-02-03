@@ -19,7 +19,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getOrder = asyncHandler(async (req: Request, res: Response) => {
-  const order = await OrderService.getOrderById(req.params.id!);
+  const order = await OrderService.getOrderById(req.params.id as string);
   return ResponseHandler.success(res, order);
 });
 
@@ -32,7 +32,7 @@ export const getOrders = asyncHandler(async (req: Request, res: Response) => {
     limit: Number(req.query.limit) || 10,
     sort: (req.query.sort as string) || '-createdAt'
   });
-  return ResponseHandler.paginated(res, result.orders, 
+  return ResponseHandler.paginated(res, result.orders,
     result.pagination.page, result.pagination.limit, result.pagination.total);
 });
 
@@ -48,7 +48,7 @@ export const getMyOrders = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const updateOrderStatus = asyncHandler(async (req: Request, res: Response) => {
-  const order = await OrderService.updateOrderStatus(req.params.id!, {
+  const order = await OrderService.updateOrderStatus(req.params.id as string, {
     ...req.body,
     updatedBy: req.user!._id.toString()
   });
@@ -56,27 +56,32 @@ export const updateOrderStatus = asyncHandler(async (req: Request, res: Response
 });
 
 export const assignRider = asyncHandler(async (req: Request, res: Response) => {
-  const order = await OrderService.assignRider(req.params.id!, req.body.riderId, req.body.type);
+  const order = await OrderService.assignRider(
+    req.params.id as string,
+    req.body.riderId,
+    req.body.type,
+    req.user!._id.toString()
+  );
   return ResponseHandler.success(res, order, 'Rider assigned successfully');
 });
 
 export const verifyDelivery = asyncHandler(async (req: Request, res: Response) => {
-  const order = await OrderService.verifyDelivery(req.params.id!, req.body);
+  const order = await OrderService.verifyDelivery(req.params.id as string, req.body);
   return ResponseHandler.success(res, order, 'Delivery verified');
 });
 
 export const generateDeliveryOtp = asyncHandler(async (req: Request, res: Response) => {
-  const otp = await OrderService.generateDeliveryOtp(req.params.id!);
+  const otp = await OrderService.generateDeliveryOtp(req.params.id as string);
   return ResponseHandler.success(res, { otp }, 'OTP generated');
 });
 
 export const rateOrder = asyncHandler(async (req: Request, res: Response) => {
-  const order = await OrderService.rateOrder(req.params.id!, req.body.rating, req.body.feedback);
+  const order = await OrderService.rateOrder(req.params.id as string, req.body.rating, req.body.feedback);
   return ResponseHandler.success(res, order, 'Rating submitted');
 });
 
 export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
-  const order = await OrderService.cancelOrder(req.params.id!, req.body.reason, req.user!._id.toString());
+  const order = await OrderService.cancelOrder(req.params.id as string, req.body.reason, req.user!._id.toString());
   return ResponseHandler.success(res, order, 'Order cancelled');
 });
 
@@ -84,7 +89,7 @@ export const getOrderStats = asyncHandler(async (req: Request, res: Response) =>
   const branchId = req.query.branch as string | undefined;
   const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
   const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
-  
+
   const stats = await OrderService.getOrderStats(branchId, startDate, endDate);
   return ResponseHandler.success(res, stats);
 });

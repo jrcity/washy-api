@@ -7,6 +7,7 @@ export interface IUser extends Document {
     phone: string; // Critical for Nigeria
     passwordHash: string;
     role: EUSERS_ROLE;
+    branch?: mongoose.Types.ObjectId | string; // Branch affiliation
     pushToken?: string; // For mobile notifications
     tokens: [{
         access_token: string;
@@ -19,7 +20,7 @@ const UserSchema: Schema = new Schema({
         type: String,
         required: true
     },
-    email: { 
+    email: {
         type: String,
     },
     phone: {
@@ -40,10 +41,10 @@ const UserSchema: Schema = new Schema({
     tokens: [{
         access_token: String,
         refresh_token: String
-    }]  
-}, 
-{
-    timestamps: true // Automatically adds createdAt, updatedAt
-}); 
+    }]
+},
+    {
+        timestamps: true // Automatically adds createdAt, updatedAt
+    });
 
 export default mongoose.model<IUser>('User', UserSchema);

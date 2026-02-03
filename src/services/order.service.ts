@@ -12,10 +12,12 @@ import Service from '@/models/service.model';
 import Branch from '@/models/branch.model';
 import { AppError } from '@/utils/error.util';
 import { otpService } from '@/utils/otp.util';
-import { 
-  EORDER_STATUS, 
+import taskService from './task.service';
+import {
+  EORDER_STATUS,
   ESERVICE_CATEGORY,
-  EDELIVERY_PROOF_TYPE 
+  EDELIVERY_PROOF_TYPE,
+  ETASK_TYPE
 } from '@/constants/enums.constant';
 
 interface CreateOrderInput {
@@ -46,7 +48,7 @@ interface UpdateStatusInput {
 }
 
 class OrderService {
-  
+
   /**
    * Create a new order
    */
@@ -56,43 +58,43 @@ class OrderService {
     if (!branch || !branch.isActive) {
       throw AppError.badRequest('Invalid or inactive branch');
     }
-    
+
     // Calculate pricing for each item
     const processedItems: IOrderItem[] = [];
     let subtotal = 0;
     let maxDuration = 0;
-    
+
     for (const item of input.items) {
       const service = await Service.findById(item.service);
       if (!service || !service.isActive) {
         throw AppError.badRequest(`Service not found: ${item.service}`);
       }
-      
+
       // Find pricing for the garment type
       const pricing = service.pricing.find(
         (p) => p.garmentType === item.garmentType
       );
-      
+
       if (!pricing) {
         throw AppError.badRequest(
           `Pricing not available for ${item.garmentType} in ${service.name}`
         );
       }
-      
+
       let unitPrice = pricing.basePrice;
       if (item.isExpress && service.isExpressAvailable) {
         unitPrice *= pricing.expressMultiplier;
       }
-      
+
       const itemSubtotal = unitPrice * item.quantity;
       subtotal += itemSubtotal;
-      
+
       // Track max duration for delivery estimation
-      const duration = item.isExpress 
-        ? service.estimatedDuration.express 
+      const duration = item.isExpress
+        ? service.estimatedDuration.express
         : service.estimatedDuration.standard;
       maxDuration = Math.max(maxDuration, duration);
-      
+
       processedItems.push({
         service: new Types.ObjectId(item.service),
         serviceType: item.serviceType,
@@ -104,30 +106,30 @@ class OrderService {
         isExpress: item.isExpress
       } as IOrderItem);
     }
-    
+
     // Calculate expected delivery date if not provided
     let expectedDeliveryDate = input.expectedDeliveryDate;
     if (!expectedDeliveryDate) {
       const pickupDate = new Date(input.pickupDate);
       expectedDeliveryDate = new Date(pickupDate.getTime() + maxDuration * 60 * 60 * 1000);
     }
-    
+
     // Apply discount if code provided
     let discount = 0;
     if (input.discountCode) {
       // TODO: Implement discount code validation
       discount = 0;
     }
-    
+
     // Calculate delivery fee based on zone
     const deliveryFee = await this.calculateDeliveryFee(
       input.pickupAddress,
       input.deliveryAddress || input.pickupAddress,
       input.branch
     );
-    
+
     const total = subtotal - discount + deliveryFee;
-    
+
     // Create the order
     const order = await Order.create({
       customer: input.customer,
@@ -148,7 +150,7 @@ class OrderService {
       status: EORDER_STATUS.PENDING,
       customerNotes: input.customerNotes
     });
-    
+
     // Update branch metrics
     await Branch.findByIdAndUpdate(input.branch, {
       $inc: {
@@ -156,7 +158,7 @@ class OrderService {
         'metrics.totalOrders': 1
       }
     });
-    
+
     return order.populate([
       { path: 'customer', select: 'name phone email' },
       { path: 'branch', select: 'name code address' },
@@ -176,11 +178,11 @@ class OrderService {
       { path: 'deliveryRider', select: 'name phone' },
       { path: 'payment' }
     ]);
-    
+
     if (!order) {
       throw AppError.notFound('Order not found');
     }
-    
+
     return order;
   }
 
@@ -199,7 +201,7 @@ class OrderService {
     sort?: string;
   }) {
     const query: any = {};
-    
+
     if (filters.customer) query.customer = filters.customer;
     if (filters.branch) query.branch = filters.branch;
     if (filters.status) query.status = filters.status;
@@ -209,18 +211,18 @@ class OrderService {
         { deliveryRider: filters.rider }
       ];
     }
-    
+
     if (filters.startDate || filters.endDate) {
       query.createdAt = {};
       if (filters.startDate) query.createdAt.$gte = filters.startDate;
       if (filters.endDate) query.createdAt.$lte = filters.endDate;
     }
-    
+
     const page = filters.page || 1;
     const limit = filters.limit || 10;
     const skip = (page - 1) * limit;
     const sort = filters.sort || '-createdAt';
-    
+
     const [orders, total] = await Promise.all([
       Order.find(query)
         .populate([
@@ -232,7 +234,7 @@ class OrderService {
         .limit(limit),
       Order.countDocuments(query)
     ]);
-    
+
     return {
       orders,
       pagination: {
@@ -252,14 +254,14 @@ class OrderService {
     input: UpdateStatusInput
   ): Promise<IOrder> {
     const order = await Order.findById(orderId);
-    
+
     if (!order) {
       throw AppError.notFound('Order not found');
     }
-    
+
     // Validate status transition
     this.validateStatusTransition(order.status, input.status);
-    
+
     order.status = input.status;
     order.statusHistory.push({
       status: input.status,
@@ -267,24 +269,24 @@ class OrderService {
       updatedBy: input.updatedBy ? new Types.ObjectId(input.updatedBy) : undefined,
       notes: input.notes
     });
-    
+
     // Handle specific status updates
     if (input.status === EORDER_STATUS.CANCELLED) {
       order.cancelledAt = new Date();
       order.cancellationReason = input.notes;
     }
-    
+
     if (input.status === EORDER_STATUS.COMPLETED) {
       // Update branch revenue
       await Branch.findByIdAndUpdate(order.branch, {
         $inc: { 'metrics.totalRevenue': order.total }
       });
     }
-    
+
     await order.save();
-    
+
     // TODO: Send notification to customer
-    
+
     return order;
   }
 
@@ -294,30 +296,40 @@ class OrderService {
   async assignRider(
     orderId: string,
     riderId: string,
-    type: 'pickup' | 'delivery'
+    type: 'pickup' | 'delivery',
+    assignedBy: string
   ): Promise<IOrder> {
     const order = await Order.findById(orderId);
-    
+
     if (!order) {
       throw AppError.notFound('Order not found');
     }
-    
+
     if (type === 'pickup') {
       order.pickupRider = new Types.ObjectId(riderId);
       // Move to confirmed status if still pending
       if (order.status === EORDER_STATUS.PENDING) {
-        await this.updateOrderStatus(orderId, { 
-          status: EORDER_STATUS.CONFIRMED 
+        await this.updateOrderStatus(orderId, {
+          status: EORDER_STATUS.CONFIRMED
         });
       }
     } else {
       order.deliveryRider = new Types.ObjectId(riderId);
     }
-    
+
     await order.save();
-    
+
+    // Create or update task
+    await taskService.upsertTaskFromOrder(
+      orderId,
+      type === 'pickup' ? ETASK_TYPE.PICKUP : ETASK_TYPE.DELIVERY,
+      riderId,
+      assignedBy
+    );
+
+
     // TODO: Send notification to rider
-    
+
     return order;
   }
 
@@ -334,27 +346,27 @@ class OrderService {
     }
   ): Promise<IOrder> {
     const order = await Order.findById(orderId);
-    
+
     if (!order) {
       throw AppError.notFound('Order not found');
     }
-    
+
     if (order.status !== EORDER_STATUS.OUT_FOR_DELIVERY) {
       throw AppError.badRequest('Order is not out for delivery');
     }
-    
+
     // Verify OTP if provided
     if (proof.type === EDELIVERY_PROOF_TYPE.OTP_CODE && proof.otpCode) {
       if (!order.deliveryProof?.otpCode) {
         throw AppError.badRequest('No OTP generated for this order');
       }
-      
+
       const isValid = otpService.verify(proof.otpCode, order.deliveryProof.otpCode);
       if (!isValid) {
         throw AppError.badRequest('Invalid OTP code');
       }
     }
-    
+
     order.deliveryProof = {
       type: proof.type,
       photoUrl: proof.photoUrl,
@@ -362,13 +374,13 @@ class OrderService {
       signature: proof.signature,
       verifiedAt: new Date()
     };
-    
+
     // Update status to delivered
-    await this.updateOrderStatus(orderId, { 
+    await this.updateOrderStatus(orderId, {
       status: EORDER_STATUS.DELIVERED,
-      notes: `Verified via ${proof.type}` 
+      notes: `Verified via ${proof.type}`
     });
-    
+
     return order.save();
   }
 
@@ -377,23 +389,23 @@ class OrderService {
    */
   async generateDeliveryOtp(orderId: string): Promise<string> {
     const order = await Order.findById(orderId);
-    
+
     if (!order) {
       throw AppError.notFound('Order not found');
     }
-    
+
     const otp = otpService.generate();
     const hashedOtp = otpService.hash(otp);
-    
+
     order.deliveryProof = {
       type: EDELIVERY_PROOF_TYPE.OTP_CODE,
       otpCode: hashedOtp
     };
-    
+
     await order.save();
-    
+
     // TODO: Send OTP to customer via SMS/WhatsApp
-    
+
     return otp;
   }
 
@@ -406,18 +418,18 @@ class OrderService {
     feedback?: string
   ): Promise<IOrder> {
     const order = await Order.findById(orderId);
-    
+
     if (!order) {
       throw AppError.notFound('Order not found');
     }
-    
+
     if (order.status !== EORDER_STATUS.COMPLETED && order.status !== EORDER_STATUS.DELIVERED) {
       throw AppError.badRequest('Can only rate completed orders');
     }
-    
+
     order.rating = rating;
     order.feedback = feedback;
-    
+
     // Update branch rating
     const branch = await Branch.findById(order.branch);
     if (branch) {
@@ -425,12 +437,12 @@ class OrderService {
       const newAverage = (
         (branch.metrics.averageRating * branch.metrics.totalReviews) + rating
       ) / totalReviews;
-      
+
       branch.metrics.averageRating = Math.round(newAverage * 10) / 10;
       branch.metrics.totalReviews = totalReviews;
       await branch.save();
     }
-    
+
     return order.save();
   }
 
@@ -443,11 +455,11 @@ class OrderService {
     cancelledBy?: string
   ): Promise<IOrder> {
     const order = await Order.findById(orderId);
-    
+
     if (!order) {
       throw AppError.notFound('Order not found');
     }
-    
+
     // Can only cancel if not yet picked up
     const nonCancellableStatuses = [
       EORDER_STATUS.IN_PROCESS,
@@ -457,11 +469,11 @@ class OrderService {
       EORDER_STATUS.COMPLETED,
       EORDER_STATUS.CANCELLED
     ];
-    
+
     if (nonCancellableStatuses.includes(order.status)) {
       throw AppError.badRequest('Order cannot be cancelled at this stage');
     }
-    
+
     return this.updateOrderStatus(orderId, {
       status: EORDER_STATUS.CANCELLED,
       updatedBy: cancelledBy,
@@ -479,7 +491,7 @@ class OrderService {
   ): Promise<number> {
     // Base delivery fee
     let fee = 500; // ₦500 base fee
-    
+
     // Add fee if delivery address is different from pickup
     if (
       pickupAddress.area !== deliveryAddress.area ||
@@ -487,9 +499,9 @@ class OrderService {
     ) {
       fee += 300; // Extra ₦300 for different areas
     }
-    
+
     // TODO: Implement zone-based pricing
-    
+
     return fee;
   }
 
@@ -511,7 +523,7 @@ class OrderService {
       [EORDER_STATUS.COMPLETED]: [],
       [EORDER_STATUS.CANCELLED]: []
     };
-    
+
     if (!validTransitions[currentStatus].includes(newStatus)) {
       throw AppError.badRequest(
         `Cannot transition from ${currentStatus} to ${newStatus}`
@@ -524,14 +536,14 @@ class OrderService {
    */
   async getOrderStats(branchId?: string, startDate?: Date, endDate?: Date) {
     const match: any = {};
-    
+
     if (branchId) match.branch = new Types.ObjectId(branchId);
     if (startDate || endDate) {
       match.createdAt = {};
       if (startDate) match.createdAt.$gte = startDate;
       if (endDate) match.createdAt.$lte = endDate;
     }
-    
+
     const stats = await Order.aggregate([
       { $match: match },
       {
@@ -542,10 +554,10 @@ class OrderService {
         }
       }
     ]);
-    
+
     const totalOrders = stats.reduce((sum, s) => sum + s.count, 0);
     const totalRevenue = stats.reduce((sum, s) => sum + s.revenue, 0);
-    
+
     return {
       byStatus: stats,
       totalOrders,

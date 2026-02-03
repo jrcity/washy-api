@@ -134,3 +134,116 @@ export enum EUPLOAD_CATEGORY {
     PROOF_PHOTO = "proof_photo",
     OTHER = "other"
 }
+
+// File folder categories for file manager
+export enum EFILE_FOLDER {
+    RECEIPTS = "receipts",
+    SERVICE_IMAGES = "service_images",
+    ORDER_PROOFS = "order_proofs",
+    PROFILE_PHOTOS = "profile_photos",
+    DOCUMENTS = "documents",
+    BRANCH_IMAGES = "branch_images",
+    CATEGORY_IMAGES = "category_images",
+    CHAT_ATTACHMENTS = "chat_attachments",
+    OTHER = "other"
+}
+
+// Chat conversation types
+export enum ECHAT_TYPE {
+    SUPPORT = "support",           // Customer to Staff/Admin
+    RIDER_CUSTOMER = "rider_customer"  // Rider to Customer (after payment)
+}
+
+// Message delivery status
+export enum EMESSAGE_STATUS {
+    SENT = "sent",
+    DELIVERED = "delivered",
+    READ = "read"
+}
+
+// Message content types
+export enum EMESSAGE_TYPE {
+    TEXT = "text",
+    IMAGE = "image",
+    LOCATION = "location",
+    SYSTEM = "system"
+}
+
+// Task types for rider assignments
+export enum ETASK_TYPE {
+    PICKUP = "pickup",
+    DELIVERY = "delivery"
+}
+
+// Task assignment status
+export enum ETASK_STATUS {
+    PENDING = "pending",
+    ASSIGNED = "assigned",
+    IN_PROGRESS = "in_progress",
+    COMPLETED = "completed",
+    CANCELLED = "cancelled"
+}
+
+// Task priority levels
+export enum ETASK_PRIORITY {
+    LOW = "low",
+    NORMAL = "normal",
+    HIGH = "high",
+    URGENT = "urgent"
+}
+
+// Analytics time periods
+export enum EANALYTICS_PERIOD {
+    DAILY = "daily",
+    WEEKLY = "weekly",
+    MONTHLY = "monthly",
+    QUARTERLY = "quarterly",
+    YEARLY = "yearly"
+}
+
+// RBAC action types
+export enum ERBAC_ACTION {
+    CREATE = "create",
+    READ = "read",
+    UPDATE = "update",
+    DELETE = "delete",
+    ALL = "*"
+}
+
+// RBAC condition operators
+export enum ERBAC_OPERATOR {
+    EQUALS = "eq",
+    NOT_EQUALS = "neq",
+    GREATER_THAN = "gt",
+    LESS_THAN = "lt",
+    GREATER_THAN_OR_EQUALS = "gte",
+    LESS_THAN_OR_EQUALS = "lte",
+    IN = "in",
+    NOT_IN = "nin",
+    CONTAINS = "contains",
+    STARTS_WITH = "startsWith",
+    ENDS_WITH = "endsWith",
+    IS_NULL = "isNull",
+    IS_NOT_NULL = "isNotNull",
+    MATCHES = "matches",
+    BELONGS_TO = "belongsTo"
+}
+
+// Audit log action types
+export enum EAUDIT_ACTION {
+    CREATE = "create",
+    UPDATE = "update",
+    DELETE = "delete",
+    LOGIN = "login",
+    LOGOUT = "logout",
+    PASSWORD_CHANGE = "password_change",
+    PERMISSION_CHANGE = "permission_change",
+    EXPORT = "export"
+}
+
+// Device platforms for push notifications
+export enum EDEVICE_PLATFORM {
+    IOS = "ios",
+    ANDROID = "android",
+    WEB = "web"
+}

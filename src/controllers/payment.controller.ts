@@ -12,21 +12,21 @@ import { EPAYMENT_METHOD, EPAYMENT_STATUS } from '@/constants/enums.constant';
 
 export const initializePayment = asyncHandler(async (req: Request, res: Response) => {
   const payment = await PaymentService.initializePayment(
-    req.body.orderId, 
-    req.user!._id.toString(), 
-    req.body.method as EPAYMENT_METHOD, 
+    req.body.orderId,
+    req.user!._id.toString(),
+    req.body.method as EPAYMENT_METHOD,
     req.body.callbackUrl
   );
   return ResponseHandler.created(res, payment, 'Payment initialized');
 });
 
 export const verifyPayment = asyncHandler(async (req: Request, res: Response) => {
-  const payment = await PaymentService.verifyPayment(req.params.reference!);
+  const payment = await PaymentService.verifyPayment(req.params.reference as string);
   return ResponseHandler.success(res, payment, 'Payment verified');
 });
 
 export const getPayment = asyncHandler(async (req: Request, res: Response) => {
-  const payment = await PaymentService.getPaymentById(req.params.id!);
+  const payment = await PaymentService.getPaymentById(req.params.id as string);
   return ResponseHandler.success(res, payment);
 });
 

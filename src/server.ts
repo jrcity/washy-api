@@ -5,9 +5,11 @@
  * @version 1.0.0
  */
 
+import { createServer } from 'http';
 import app from './app';
 import { connectDB } from '@/config/database';
 import { CONFIGS } from '@/constants/configs.constant';
+import { initSocketIO } from '@/config/socket';
 
 const PORT = CONFIGS.APP.PORT || 3000;
 
@@ -15,8 +17,13 @@ const PORT = CONFIGS.APP.PORT || 3000;
 const startServer = async () => {
   try {
     await connectDB();
-    
-    app.listen(PORT, () => {
+
+    const httpServer = createServer(app);
+
+    // Initialize Socket.IO
+    initSocketIO(httpServer);
+
+    httpServer.listen(PORT, () => {
       console.log(`
 ╔═════════════════════════════════════════════════════════════════════╗
 ║                                                                     ║

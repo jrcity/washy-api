@@ -15,10 +15,18 @@ import routes from '@/routes';
 import { errorHandler, notFoundHandler } from '@/middlewares/error.middleware';
 import { CONFIGS } from '@/constants/configs.constant';
 import { swaggerSpec } from '@/config/swagger';
+import {
+  globalRateLimit,
+  deepSanitize,
+  securityHeaders
+} from '@/middlewares/security.middleware';
 
 const app: Application = express();
 
-// Security middleware
+// Security headers
+app.use(securityHeaders);
+
+// Helmet security
 app.use(helmet());
 
 // CORS
@@ -31,8 +39,14 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// NoSQL injection prevention
+app.use(deepSanitize);
+
 // Compression
 app.use(compression());
+
+// Global rate limiting
+app.use(globalRateLimit);
 
 // Logging
 if (CONFIGS.APP.ENV !== 'test') {
@@ -84,4 +98,5 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 export default app;
+
 

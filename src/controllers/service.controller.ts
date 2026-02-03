@@ -16,12 +16,12 @@ export const createService = asyncHandler(async (req: Request, res: Response) =>
 });
 
 export const getService = asyncHandler(async (req: Request, res: Response) => {
-  const service = await ServiceService.getServiceById(req.params.id!);
+  const service = await ServiceService.getServiceById(req.params.id as string);
   return ResponseHandler.success(res, service);
 });
 
 export const getServiceBySlug = asyncHandler(async (req: Request, res: Response) => {
-  const service = await ServiceService.getServiceBySlug(req.params.slug!);
+  const service = await ServiceService.getServiceBySlug(req.params.slug as string);
   return ResponseHandler.success(res, service);
 });
 
@@ -45,17 +45,17 @@ export const getActiveServices = asyncHandler(async (req: Request, res: Response
 });
 
 export const updateService = asyncHandler(async (req: Request, res: Response) => {
-  const service = await ServiceService.updateService(req.params.id!, req.body);
+  const service = await ServiceService.updateService(req.params.id as string, req.body);
   return ResponseHandler.success(res, service, 'Service updated');
 });
 
 export const updatePricing = asyncHandler(async (req: Request, res: Response) => {
-  const service = await ServiceService.updatePricing(req.params.id!, req.body.pricing);
+  const service = await ServiceService.updatePricing(req.params.id as string, req.body.pricing);
   return ResponseHandler.success(res, service, 'Pricing updated');
 });
 
 export const deleteService = asyncHandler(async (req: Request, res: Response) => {
-  await ServiceService.deleteService(req.params.id!);
+  await ServiceService.deleteService(req.params.id as string);
   return ResponseHandler.noContent(res);
 });
 
