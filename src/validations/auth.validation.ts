@@ -47,11 +47,19 @@ export const updatePushTokenValidation = z.object({
     pushToken: z.string().min(1, "Push token is required"),
 });
 
+// Validation for Profile Update
+export const updateProfileValidation = z.object({
+    name: z.string().min(2).optional(),
+    email: z.string().email().optional(),
+    phone: z.string().regex(NIGERIA_PHONE_REGEX).optional(),
+});
+
 export default {
     registerValidation,
     loginValidation,
     requestPasswordResetValidation,
     resetPasswordValidation,
     changePasswordValidation,
-    updatePushTokenValidation
+    updatePushTokenValidation,
+    updateProfileValidation
 };

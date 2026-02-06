@@ -215,7 +215,13 @@ class AuthService {
     }
   }
 
-  // 4. UPDATE PUSH TOKEN
+  // 4. UPDATE PROFILE
+  async updateProfile(userId: string, data: Partial<IUser>): Promise<IUser> {
+    const userService = (await import('./user.service')).default;
+    return userService.updateUser(userId, data);
+  }
+
+  // 5. UPDATE PUSH TOKEN
   async updatePushToken(userId: string, pushToken: string): Promise<void> {
     await User.findByIdAndUpdate(userId, { pushToken });
   }

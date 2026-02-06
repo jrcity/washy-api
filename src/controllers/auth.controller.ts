@@ -23,4 +23,9 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
   return ResponseHandler.success(res, req.user, 'Profile retrieved');
 });
 
-export default { register, login, getProfile };
+export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
+  const user = await AuthService.updateProfile(req.user!._id.toString(), req.body);
+  return ResponseHandler.success(res, user, 'Profile updated successfully');
+});
+
+export default { register, login, getProfile, updateProfile };
