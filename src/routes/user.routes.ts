@@ -7,6 +7,8 @@
 import { Router } from 'express';
 import { UserController } from '@/controllers';
 import { authenticate, authorize } from '@/middlewares/auth.middleware';
+import { validateBody } from '@/middlewares/validation.middleware';
+import { createInternalUserValidation } from '@/validations/user.validation';
 import { EUSERS_ROLE } from '@/constants/enums.constant';
 
 const router = Router();
@@ -14,7 +16,14 @@ const router = Router();
 // Protect all routes
 router.use(authenticate);
 
-// Get all users (Admin/SuperAdmin/Staff depending on policy, but usually restricted)
+// Create staff/rider (Admin/SuperAdmin/BranchManager)
+router.post('/internal',
+    authorize(EUSERS_ROLE.ADMIN, EUSERS_ROLE.SUPER_ADMIN, EUSERS_ROLE.BRANCH_MANAGER),
+    validateBody(createInternalUserValidation),
+    UserController.createInternalUser
+);
+
+// Get all users
 // The user request specially mentioned role=staff, so likely admin wants to see staff.
 // Allowing ADMIN, SUPER_ADMIN, BRANCH_MANAGER to list users.
 router.get('/', authorize(EUSERS_ROLE.ADMIN, EUSERS_ROLE.SUPER_ADMIN, EUSERS_ROLE.BRANCH_MANAGER), UserController.getUsers);

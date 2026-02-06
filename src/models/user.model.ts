@@ -37,6 +37,18 @@ const UserSchema: Schema = new Schema({
         enum: Object.values(EUSERS_ROLE),
         default: EUSERS_ROLE.CUSTOMER
     },
+    branch: {
+        type: Schema.Types.ObjectId,
+        ref: 'Branch'
+    },
+    managedBranch: {
+        type: Schema.Types.ObjectId,
+        ref: 'Branch'
+    },
+    assignedBranch: {
+        type: Schema.Types.ObjectId,
+        ref: 'Branch'
+    },
     pushToken: { type: String },
     tokens: [{
         access_token: String,

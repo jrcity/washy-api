@@ -55,9 +55,10 @@ class AnalyticsService {
     /**
      * Get revenue overview with trends
      */
-    async getRevenueOverview(period: EANALYTICS_PERIOD, branchId?: string) {
+    async getRevenueOverview(period: EANALYTICS_PERIOD, branchId?: string, rbacFilter: any = {}) {
         const { startDate, endDate } = this.getDateRange(period);
         const match: any = {
+            ...rbacFilter,
             createdAt: { $gte: startDate, $lte: endDate },
             status: { $in: [EORDER_STATUS.COMPLETED, EORDER_STATUS.DELIVERED] }
         };
@@ -311,9 +312,9 @@ class AnalyticsService {
     /**
      * Get order completion rates
      */
-    async getOrderCompletionRates(branchId?: string) {
+    async getOrderCompletionRates(branchId?: string, rbacFilter: any = {}) {
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const match: any = { createdAt: { $gte: thirtyDaysAgo } };
+        const match: any = { ...rbacFilter, createdAt: { $gte: thirtyDaysAgo } };
         if (branchId) match.branch = new Types.ObjectId(branchId);
 
         const stats = await Order.aggregate([
@@ -388,11 +389,11 @@ class AnalyticsService {
     /**
      * Get peak ordering hours
      */
-    async getPeakHours() {
+    async getPeakHours(rbacFilter: any = {}) {
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
         const result = await Order.aggregate([
-            { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+            { $match: { ...rbacFilter, createdAt: { $gte: thirtyDaysAgo } } },
             {
                 $group: {
                     _id: { $hour: '$createdAt' },
@@ -632,9 +633,9 @@ class AnalyticsService {
     /**
      * Get rider performance
      */
-    async getRiderPerformance(riderId?: string) {
+    async getRiderPerformance(riderId?: string, rbacFilter: any = {}) {
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const match: any = { createdAt: { $gte: thirtyDaysAgo } };
+        const match: any = { ...rbacFilter, createdAt: { $gte: thirtyDaysAgo } };
 
         if (riderId) {
             match.$or = [
@@ -776,7 +777,7 @@ class AnalyticsService {
     /**
      * Get combined dashboard data
      */
-    async getDashboard(branchId?: string) {
+    async getDashboard(branchId?: string, rbacFilter: any = {}) {
         const [
             revenueOverview,
             completionRates,
@@ -784,11 +785,11 @@ class AnalyticsService {
             customerRetention,
             riderPerformance
         ] = await Promise.all([
-            this.getRevenueOverview(EANALYTICS_PERIOD.MONTHLY, branchId),
-            this.getOrderCompletionRates(branchId),
-            this.getPeakHours(),
+            this.getRevenueOverview(EANALYTICS_PERIOD.MONTHLY, branchId, rbacFilter),
+            this.getOrderCompletionRates(branchId, rbacFilter),
+            this.getPeakHours(rbacFilter),
             this.getCustomerRetention(),
-            this.getRiderPerformance()
+            this.getRiderPerformance(undefined, rbacFilter)
         ]);
 
         return {

@@ -6,6 +6,7 @@
 
 import { Request, Response } from 'express';
 import UserService from '@/services/user.service';
+import AuthService from '@/services/auth.service';
 import ResponseHandler from '@/utils/response.util';
 import { asyncHandler } from '@/utils/async-handler.util';
 import { EUSERS_ROLE } from '@/constants/enums.constant';
@@ -39,9 +40,15 @@ export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
   return ResponseHandler.success(res, null, 'User deleted successfully');
 });
 
+export const createInternalUser = asyncHandler(async (req: Request, res: Response) => {
+  const user = await AuthService.createInternalUser(req.body, req.user!);
+  return ResponseHandler.success(res, user, 'Internal user created successfully', 201);
+});
+
 export default {
   getUsers,
   getUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  createInternalUser
 };

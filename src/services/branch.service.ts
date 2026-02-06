@@ -44,23 +44,23 @@ class BranchService {
     if (!BRANCH_CODE_REGEX.test(code)) {
       throw AppError.badRequest('Invalid branch code format');
     }
-    
+
     // Check if branch code already exists
     const existingBranch = await Branch.findOne({ code });
     if (existingBranch) {
       throw AppError.conflict('Branch code already exists');
     }
-    
+
     const branch = await Branch.create({
       ...input,
       code
     });
-    
+
     // If manager is assigned, update the branch manager reference
     if (input.manager) {
       await this.assignManager(branch._id.toString(), input.manager);
     }
-    
+
     return branch;
   }
 
@@ -72,11 +72,11 @@ class BranchService {
       .populate('manager', 'name email phone')
       .populate('staff', 'name email phone')
       .populate('riders', 'name phone');
-    
+
     if (!branch) {
       throw AppError.notFound('Branch not found');
     }
-    
+
     return branch;
   }
 
@@ -92,18 +92,18 @@ class BranchService {
     limit?: number;
   }) {
     const query: any = {};
-    
+
     if (filters.isActive !== undefined) query.isActive = filters.isActive;
     if (filters.city) query['address.city'] = new RegExp(filters.city, 'i');
     if (filters.state) query['address.state'] = new RegExp(filters.state, 'i');
     if (filters.zone) {
       query['coverageZones.name'] = new RegExp(filters.zone, 'i');
     }
-    
+
     const page = filters.page || 1;
     const limit = filters.limit || 10;
     const skip = (page - 1) * limit;
-    
+
     const [branches, total] = await Promise.all([
       Branch.find(query)
         .populate('manager', 'name email')
@@ -112,7 +112,7 @@ class BranchService {
         .limit(limit),
       Branch.countDocuments(query)
     ]);
-    
+
     return {
       branches,
       pagination: {
@@ -136,17 +136,17 @@ class BranchService {
     if (updates.code) {
       throw AppError.badRequest('Branch code cannot be changed');
     }
-    
+
     const branch = await Branch.findByIdAndUpdate(
       branchId,
       { $set: updates },
       { new: true, runValidators: true }
     ).populate('manager', 'name email phone');
-    
+
     if (!branch) {
       throw AppError.notFound('Branch not found');
     }
-    
+
     return branch;
   }
 
@@ -159,7 +159,7 @@ class BranchService {
       { isActive: false },
       { new: true }
     );
-    
+
     if (!branch) {
       throw AppError.notFound('Branch not found');
     }
@@ -174,7 +174,7 @@ class BranchService {
     if (!manager) {
       throw AppError.notFound('Manager not found');
     }
-    
+
     if (
       manager.role !== EUSERS_ROLE.BRANCH_MANAGER &&
       manager.role !== EUSERS_ROLE.ADMIN &&
@@ -182,17 +182,23 @@ class BranchService {
     ) {
       throw AppError.badRequest('User is not a branch manager');
     }
-    
+
     const branch = await Branch.findByIdAndUpdate(
       branchId,
       { manager: managerId },
       { new: true }
     ).populate('manager', 'name email phone');
-    
+
     if (!branch) {
       throw AppError.notFound('Branch not found');
     }
-    
+
+    // Sync back to user - update both canonical 'branch' and specialized 'managedBranch'
+    await User.findByIdAndUpdate(managerId, {
+      branch: branchId,
+      managedBranch: branchId
+    });
+
     return branch;
   }
 
@@ -208,11 +214,11 @@ class BranchService {
       { $push: { coverageZones: { $each: zones } } },
       { new: true }
     );
-    
+
     if (!branch) {
       throw AppError.notFound('Branch not found');
     }
-    
+
     return branch;
   }
 
@@ -228,11 +234,11 @@ class BranchService {
       { $pull: { coverageZones: { name: zoneName } } },
       { new: true }
     );
-    
+
     if (!branch) {
       throw AppError.notFound('Branch not found');
     }
-    
+
     return branch;
   }
 
@@ -267,9 +273,9 @@ class BranchService {
     if (!user) {
       throw AppError.notFound('User not found');
     }
-    
+
     const updateField = type === 'staff' ? 'staff' : 'riders';
-    
+
     const branch = await Branch.findByIdAndUpdate(
       branchId,
       { $addToSet: { [updateField]: userId } },
@@ -277,11 +283,17 @@ class BranchService {
     )
       .populate('staff', 'name email phone')
       .populate('riders', 'name phone');
-    
+
     if (!branch) {
       throw AppError.notFound('Branch not found');
     }
-    
+
+    // Sync back to user - update both canonical 'branch' and specialized 'assignedBranch'
+    await User.findByIdAndUpdate(userId, {
+      branch: branchId,
+      assignedBranch: branchId
+    });
+
     return branch;
   }
 
@@ -294,7 +306,7 @@ class BranchService {
     type: 'staff' | 'rider'
   ): Promise<IBranch> {
     const updateField = type === 'staff' ? 'staff' : 'riders';
-    
+
     const branch = await Branch.findByIdAndUpdate(
       branchId,
       { $pull: { [updateField]: userId } },
@@ -302,11 +314,16 @@ class BranchService {
     )
       .populate('staff', 'name email phone')
       .populate('riders', 'name phone');
-    
+
     if (!branch) {
       throw AppError.notFound('Branch not found');
     }
-    
+
+    // Sync back to user - clear both branch fields
+    await User.findByIdAndUpdate(userId, {
+      $unset: { branch: 1, assignedBranch: 1, managedBranch: 1 }
+    });
+
     return branch;
   }
 
@@ -318,7 +335,7 @@ class BranchService {
     if (!branch) {
       throw AppError.notFound('Branch not found');
     }
-    
+
     return {
       totalOrders: branch.metrics.totalOrders,
       totalRevenue: branch.metrics.totalRevenue,
@@ -340,7 +357,7 @@ class BranchService {
     if (!branch) {
       throw AppError.notFound('Branch not found');
     }
-    
+
     return (branch as any).isOpenNow();
   }
 
@@ -360,12 +377,12 @@ class BranchService {
   private async generateBranchCode(name: string): Promise<string> {
     // Take first 3 letters of branch name
     const prefix = name.substring(0, 3).toUpperCase();
-    
+
     // Count existing branches with same prefix
     const count = await Branch.countDocuments({
       code: { $regex: `^${prefix}` }
     });
-    
+
     return `${prefix}-${String(count + 1).padStart(3, '0')}`;
   }
 }
